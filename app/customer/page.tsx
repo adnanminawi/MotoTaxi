@@ -1,7 +1,8 @@
 "use client";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
-
+import { fetchRideLocation, createRide } from "@/services/customer";
+import { DriverLocation } from "@/types";
 const Map = dynamic(() => import("@/components/CustomerMap"), { ssr: false });
 
 export default function Page() {
@@ -10,31 +11,34 @@ export default function Page() {
   const [pickup, setPickup] = useState<{ lat: number; lng: number } | null>(null);
   const [destination, setDestination] = useState<{ lat: number; lng: number } | null>(null);
   const [rideId, setRideId] = useState<number | null>(null);
-  const [driverLocation, setDriverLocation] = useState<{ current_lat: number; current_lng: number } | null>(null);
+  const [driverLocation, setDriverLocation] = useState<DriverLocation| null>(null);
   const [driverInfo, setDriverInfo]= useState<{ Name: string; Phone: string }>({ Name: "", Phone: "" });
   const [noDriver, setNoDriver] = useState(false);
 
   useEffect(() => {
     if (!rideId) return;
-    const fetchLocation = async () => {
-      const res = await fetch(`/api/ride/${rideId}/location`);
-      const data = await res.json();
-      setDriverLocation(data.location);
-       if (data.location) {
-    setDriverInfo({ Name: data.location.name, Phone: data.location.phone });
-  } else {
-    setDriverInfo({ Name: "", Phone: "" });  
-  }
-}
-    fetchLocation();
-    const interval = setInterval(fetchLocation, 10000);
+    const id = rideId
+    async function loadLocation (){
+      const data = await fetchRideLocation(id);
+      setDriverLocation(data);
+      if (data) {
+        setDriverInfo({ Name: data.name, Phone: data.phone });
+      }   
+      else {
+        setDriverInfo({ Name: "", Phone: "" });  
+      }
+    };
+    loadLocation();
+    const interval = setInterval(loadLocation , 10000);
     return () => clearInterval(interval);
   }, [rideId]);
+
+
 
   function handleSubmit() {
     if (!pickup || !destination) return;
 
-    const data = {
+    const data ={
       name,
       phone,
       pickup_lat: pickup.lat,
@@ -42,23 +46,17 @@ export default function Page() {
       destination_lat: destination.lat,
       destination_lng: destination.lng,
     };
-
-    const fetchInfo = async () => {
-      try {
-        const res = await fetch("/api/ride", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        });
-
-        const result = await res.json();
-        setRideId(result.rideId);
-        setNoDriver(result.assignedDriver === null);
-      } catch (error) {
+    async function Submit(){
+      try{
+        const s = await createRide(data);
+        setRideId(s.rideId);
+        setNoDriver(s.assignedDriver === null);
+      }catch (error){
         console.log(error);
-      } 
-    };
-    fetchInfo();
+        alert ("Failed to book");
+      }
+    }
+    Submit();
   }
 
   function reset() {

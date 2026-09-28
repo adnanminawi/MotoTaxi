@@ -1,5 +1,5 @@
 import db from "@/lib/db";
-import { RowDataPacket } from "mysql2";
+import { RowDataPacket,ResultSetHeader  } from "mysql2";
 import { findNearestDriver } from "@/lib/findNearestDriver";
 
 export async function GET() {
@@ -34,17 +34,18 @@ export async function PUT(req: Request) {
   try {
     const { action, rideId, driverId } = await req.json();
 
-  
   if (action === "accept") {
-  await db.query("UPDATE ride SET driver_id = ?,status = 'assigned',assigned_at = NOW() WHERE id = ?",
-    [driverId, rideId]);
+ const [result] = await db.query<ResultSetHeader>(
+  "UPDATE ride SET driver_id = ?, status = 'assigned', assigned_at = NOW() WHERE id = ? AND status = 'searching'",
+  [driverId, rideId]
+);
 
-  await db.query("UPDATE driver SET status='busy' WHERE id=?",
-    [driverId]);
+if (result.affectedRows === 0) {
+  return Response.json({ message: "Ride already taken" }, { status: 409 });
+}
 
-      return Response.json({
-        message: "Ride accepted successfully",
-      });
+await db.query("UPDATE driver SET status = 'busy' WHERE id = ?", [driverId]);
+return Response.json({ message: "Ride accepted successfully" })
     }
     if(action == "reject"){
       const [rows] = await db.query<RowDataPacket[]>("SELECT pickup_lat, pickup_lng, rejected_by FROM ride WHERE id=?",
@@ -73,7 +74,7 @@ export async function PUT(req: Request) {
     
 
   if (action === "complete") {
-  ;
+  
   const [result]: any = await db.query(`UPDATE ride SET status = 'completed', completed_at = NOW() WHERE id = ?`,
   [rideId]);
 
@@ -81,7 +82,7 @@ export async function PUT(req: Request) {
     [driverId]);
 
 
-      console.log("Complete update result:", result);
+      console.log("Complete update result:");
 
   return Response.json({
     message: "Ride completed successfully",

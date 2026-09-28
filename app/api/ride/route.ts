@@ -16,13 +16,20 @@ export async function GET() {
     try{
         const [ride_info] = await db.query("SELECT r.id,c.name AS customer_name, d.name AS driver_name, r.pickup_address, r.destination_address, r.status FROM ride r LEFT JOIN driver d ON driver_id=d.id JOIN customer c ON customer_id=c.id");
         return Response.json({ rides_info: ride_info});
-    }catch(error){
-    return Response.json({error: String(error) }, { status: 500 });
-    }
+    } catch (error) {
+  console.error(error);
+  return Response.json({ message: "Something went wrong." }, { status: 500 });
+}
 }
 
 export async function POST(request:Request){
-  const {name, phone,pickup_lat,pickup_lng,pickup_address,destination_lat,destination_lng,destination_address,status} = await request.json();
+  const {name, phone,pickup_lat,pickup_lng,destination_lat,destination_lng,status} = await request.json();
+ if (!name || !phone ||pickup_lat === undefined || pickup_lng === undefined || destination_lat === undefined ||destination_lng === undefined) {
+  return Response.json(
+    { message: "Missing required fields: name, phone, and pickup/destination coordinates are required." },
+    { status: 400 }
+  );
+}
   try{
     const[get_cust]= await db.query<RowDataPacket[]>("SELECT id FROM customer Where phone=?",
     [phone]);
@@ -59,8 +66,9 @@ const destination_address = await getAddress(destination_lat, destination_lng);
       { ok: true, driver: driv[0] ?? null, rideId, assignedDriver: driver?.id ?? null },
       { status: 201 }
     );
-  } catch (error) {
-    return Response.json({ error: String(error) }, { status: 500 });
-  }
+  }catch (error) {
+  console.error(error);
+  return Response.json({ message: "Something went wrong." }, { status: 500 });
+}
 
 }
