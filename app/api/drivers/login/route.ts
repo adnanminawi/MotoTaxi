@@ -1,6 +1,7 @@
 import db from "@/lib/db";
 import bcrypt from "bcrypt";
-
+import jwt from "jsonwebtoken";
+import { cookies } from "next/headers";
 export async function POST(req: Request) {
   try {
     const { phone, password } = await req.json();
@@ -39,6 +40,21 @@ export async function POST(req: Request) {
         { status: 401 }
       );
     }
+
+    const token = jwt.sign(
+    {driverId: driver.id, role: "driver" },
+    process.env.JWT_SECRET!,
+    {expiresIn: "7d" }
+    );
+  
+    const cookieStore = await cookies();
+    cookieStore.set("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",   // ← the localhost trap
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 7,
+    path: "/",
+    });
 
     // Success
     return Response.json({

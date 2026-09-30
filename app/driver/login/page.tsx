@@ -2,7 +2,7 @@
 
   import { useState } from "react";
   import { useRouter } from "next/navigation";
-
+  import { login } from "@/services/driver";
   export default function DriverLogin() {
     const router = useRouter();
 
@@ -12,28 +12,9 @@
 
     async function handleLogin(e: React.FormEvent) {
       e.preventDefault();
-
+      const da = {phone , password};
       try {
-        const res = await fetch("/api/drivers/login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            phone,
-            password,
-          }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          setError(data.error);
-          return;
-        }
-
-        sessionStorage.setItem("driver", JSON.stringify(data.driver));
-
+        await login(da);
         router.push("/driver");
 
       } catch (err) {
