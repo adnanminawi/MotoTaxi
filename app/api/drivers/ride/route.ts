@@ -1,7 +1,7 @@
 import db from "@/lib/db";
 import { RowDataPacket,ResultSetHeader  } from "mysql2";
 import { findNearestDriver } from "@/lib/findNearestDriver";
-
+import { getDriverId } from "@/lib/getDriverId";
 export async function GET() {
   try {
    const [rides] = await db.query(
@@ -32,8 +32,11 @@ LIMIT 1`
 
 export async function PUT(req: Request) {
   try {
-    const { action, rideId, driverId } = await req.json();
+    
+    const driverId = await getDriverId();
+    if (!driverId) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+    const { action, rideId } = await req.json();
   if (action === "accept") {
  const [result] = await db.query<ResultSetHeader>(
   "UPDATE ride SET driver_id = ?, status = 'assigned', assigned_at = NOW() WHERE id = ? AND status = 'searching'",

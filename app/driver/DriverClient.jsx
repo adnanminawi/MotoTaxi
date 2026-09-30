@@ -1,6 +1,7 @@
 "use client";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import { driverSession, setStatus, rideService,logout } from "@/services/driver";
 const Map = dynamic(() => import("@/components/DriverMap"), { ssr: false });
 import GPSStream from "@/components/GPSStream";
 import RidePopup from "@/components/RidePopup";
@@ -16,26 +17,17 @@ export default function DriverClient() {
 
   useEffect(() => {
     async function fetchDriver() {
-      try {
-        const savedDriver = JSON.parse(sessionStorage.getItem("driver"));
-        if (!savedDriver) return;
-
-        const res = await fetch(`/api/drivers/${savedDriver.id}`);
-        if (!res.ok) return;
-
-        const data = await res.json();
-        const d = data.driver_Profile?.[0];
-
-        setDriver(d);
-        setIsOnline(d?.status === "online");
-        setTotalRides(data.totalRides || 0);
-      } catch (err) {
-        console.error("Failed to fetch driver:", err);
-      }
+    try {
+      const data = await driverSession();
+      setDriver(data.driver);
+      setIsOnline(data.driver?.status === "online");
+      setTotalRides(data.totalRides || 0);
+    } catch (err) {
+      console.error("Failed to fetch driver:", err);
     }
-
-    fetchDriver();
-  }, []);
+  }
+  fetchDriver();
+}, []);
 
   async function toggleStatus() {
     if (!driver) return;
@@ -43,93 +35,58 @@ export default function DriverClient() {
     const newStatus = isOnline ? "offline" : "online";
 
     try {
-      const res = await fetch("/api/drivers/status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ driverId: driver.id, status: newStatus }),
-      });
-
-      if (!res.ok) {
-        console.error("Failed to update status in DB");
-        return;
-      }
-
-      const data = await res.json();
-
+      await setStatus(newStatus);
       setIsOnline(newStatus === "online");
       setDriver((prev) => ({ ...prev, status: newStatus }));
-
-      console.log("DB updated:", data.message);
     } catch (err) {
       console.error("Error updating status:", err);
     }
   }
 
   async function acceptRide() {
+    const d ={
+    action : "accept",
+  rideId : rideRequest.id}
     try {
-      const res = await fetch("/api/drivers/ride", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "accept",
-          rideId: rideRequest.id,
-          driverId: driver.id,
-        }),
-      });
-
-      const data = await res.json();
-      console.log(data);
-
-      if (res.ok) {
-        setActiveRide(rideRequest);
-        setPickup({
+      await rideService(d);
+      setActiveRide(rideRequest);
+      setPickup({
           lat: rideRequest.pickup.lat,
           lng: rideRequest.pickup.lng,
-        });
-        setRideRequest(null);
-      }
+      });
+      setRideRequest(null); 
     } catch (err) {
       console.error("Failed to accept ride:", err);
     }
   }
 
   async function rejectRide() {
-    await fetch("/api/drivers/ride", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "reject",
-        rideId: rideRequest.id,
-        driverId: driver.id,
-      }),
-    });
+    const d = {action : "reject" ,rideId : rideRequest.id}
+    try{
+      await rideService(d);
+    }catch(err){
+    console.error("Failed to reject ride:", err);
+    }
     setRideRequest(null);
   }
 
   async function completeRide() {
+    const d ={ action: "complete",rideId : activeRide.id}
     try {
-      const res = await fetch("/api/drivers/ride", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "complete",
-          rideId: activeRide.id,
-          driverId: driver.id,
-        }),
-      });
-
-      const data = await res.json();
-      console.log(data);
-
-      if (res.ok) {
+      await rideService(d);
         setActiveRide(null);
         setIsOnline(true);
         setDriver((prev) => ({ ...prev, status: "online" }));
-      }
     } catch (err) {
       console.error(err);
     }
   }
+
+
+  async function handleLogout() {
+  await logout();
+  window.location.href = "/driver/login";   // send them to login
+} 
 
   useEffect(() => {
     if (!rideRequest) return;
@@ -165,13 +122,23 @@ export default function DriverClient() {
           >
             {isOnline ? "Go Offline" : "Go Online"}
           </button>
+          
         </div>
+
+        
+        
 
         <div className="bg-[#f7f7f7] p-4 rounded-[10px] border border-[#e3e3e3]">
           <h3 className="text-[13px] font-semibold text-gray-500 mb-1.5">Total Rides</h3>
           <h2 className="text-[22px] font-bold text-gray-900">{totalRides}</h2>
         </div>
+
+        <div className="bg-[#f7f7f7] p-4 rounded-[10px] border border-[#e3e3e3]">
+        <button className="w-full py-2.5 bg-[#f4c542] hover:bg-[#e6b93c] font-semibold text-sm cursor-pointer rounded-md text-black transition" onClick=
+        {handleLogout}>Logout</button>
+        </div>
       </div>
+      
 
       <div className="flex-1 h-full w-full relative overflow-hidden bg-[#dcdcdc]">
         {rideRequest && (
