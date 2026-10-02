@@ -1,8 +1,8 @@
 import api from "./axios";
-import { Login, LoginResponse, SessionResponse, StatusResponse, DriverStatus, RideAction } from "@/types";
+import { DriverLogin, DriverLoginResponse, SessionResponse, StatusResponse, DriverStatus, RideAction } from "@/types";
 
-export async function login(data : Login): Promise<LoginResponse>{
-    const res = await api.post<LoginResponse>("/drivers/login", data);
+export async function login(data : DriverLogin): Promise<DriverLoginResponse>{
+    const res = await api.post<DriverLoginResponse>("/drivers/login", data);
     return res.data;
 }
 export async function driverSession(): Promise<SessionResponse> {

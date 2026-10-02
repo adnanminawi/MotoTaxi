@@ -1,18 +1,18 @@
 "use client";
-
 import { useEffect, useState } from "react";
+import { getDrivers } from "@/services/admin";
 import Link from "next/link";
+import { Driver } from "@/types";
 
 export default function DriversPage() {
-  const [drivers, setDrivers] = useState([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDrivers = async () => {
       try {
-        const res = await fetch("/api/drivers");
-        const data = await res.json();
-        setDrivers(Array.isArray(data?.drivers) ? data.drivers : []);
+        const data = await getDrivers();
+        setDrivers(data);
       } catch (err) {
         console.log("Error fetching drivers:", err);
         setDrivers([]);
@@ -23,7 +23,7 @@ export default function DriversPage() {
     fetchDrivers();
   }, []);
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: Driver["status"]) => {
     switch (status) {
       case "online":
         return "text-green-600";

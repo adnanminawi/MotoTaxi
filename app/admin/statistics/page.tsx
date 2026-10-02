@@ -4,40 +4,28 @@ import { useEffect, useState } from "react";
 import StatCard from "@/components/admin/StatCard";
 import RideChart from "@/components/admin/RideChart";
 import DriverChart from "@/components/admin/DriverChart";
+import { Stats } from "@/types";
+import { getStats } from "@/services/admin";
 
 export default function StatisticsPage() {
-  const [stats, setStats] = useState({});
+  const [stats, setStats] = useState<Stats | null>(null);
   useEffect(() => {
     loadStats();
   }, []);
 
   async function loadStats() {
     try {
-      const res = await fetch("/api/admin");
-      const data = await res.json();
-
-      setStats({
-        drivers: data.total_drivers || 0,
-        customers: data.total_customers || 0,
-        rides: data.total_rides || 0,
-
-        // normalize old + new statuses
-        completed: data.completed_rides || 0,
-        pending: data.pending_rides || 0,
-        cancelled: data.cancelled_rides || 0,
-
-        online: data.online || 0,
-        offline: data.offline||0,
-        bust: data.busy||0,
-
-
-      });
+      const data = await getStats();
+      setStats(data);
     } catch (err) {
       console.log("Error loading stats:", err);
     }
   }
 
-  return (
+if (!stats) return <p className="p-10">Loading...</p>;
+  
+
+return (
     <div className="min-h-screen bg-gray-100 p-10">
 
       <h1 className="text-4xl font-bold mb-10">
@@ -49,42 +37,42 @@ export default function StatisticsPage() {
 
         <StatCard
           title="Customers"
-          value={stats.customers}
+          value={stats.total_customers}
           icon="👥"
           color="bg-blue-500"
         />
 
         <StatCard
           title="Drivers"
-          value={stats.drivers}
+          value={stats.total_drivers}
           icon="🚗"
           color="bg-green-500"
         />
 
         <StatCard
           title="Total Rides"
-          value={stats.rides}
+          value={stats.total_rides}
           icon="🛵"
           color="bg-purple-500"
         />
 
         <StatCard
           title="Completed"
-          value={stats.completed}
+          value={stats.completed_rides}
           icon="✅"
           color="bg-emerald-500"
         />
 
         <StatCard
-          title="Pending"
-          value={stats.pending}
+          title="Searching"
+          value={stats.searching_rides}
           icon="🟡"
           color="bg-yellow-500"
         />
 
         <StatCard
           title="Cancelled"
-          value={stats.cancelled}
+          value={stats.cancelled_rides}
           icon="❌"
           color="bg-red-500"
         />
@@ -95,9 +83,9 @@ export default function StatisticsPage() {
       <div className="grid lg:grid-cols-2 gap-8 mt-12">
 
         <RideChart
-          completed={stats.completed}
-          searching={stats.pending}
-          cancelled={stats.cancelled}
+          completed={stats.completed_rides}
+          searching={stats.searching_rides}
+          cancelled={stats.cancelled_rides}
         />
 
         <DriverChart

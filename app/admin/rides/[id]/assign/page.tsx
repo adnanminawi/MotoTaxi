@@ -3,48 +3,48 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useRouter } from "next/navigation";
+import { assignDriver, getDrivers } from "@/services/admin";
+import { Driver } from "@/types";
 export default function AssignRide() {
 
   const params = useParams();
 
   const rideId = params.id;
 
-  const [drivers, setDrivers] = useState([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [driverId, setDriverId] = useState("");
   const [updated, setUpdated] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    fetch("/api/drivers")
-      .then((res) => res.json())
-      .then((data) => {
-        setDrivers(data.drivers || []);
-      });
-  }, []);
+    const fetchDrivers = async () =>{
+      try{
+        const data = await getDrivers();
+        setDrivers(data);
+      }catch(err){
+        console.log("Error fetching drivers.");
+        setDrivers([]);
+      }
+    };
+    fetchDrivers();
+  },[]);
 
 
 const handleAssign = async () => {
-  const res = await fetch("/api/admin/assign", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      rideId,
-      driverId,
-    }),
-  });
-
-  const data = await res.json();
-
- if (res.ok) {
+  const data = { rideId: Number(rideId), driverId: Number(driverId) };
+  try{
+  await assignDriver(data);
   setUpdated(true);
-
   setTimeout(() => {
     router.push("/admin/rides");
   }, 1500);
-}
-};
+  }catch(err){
+  alert("Cannt assign driver");
+  }};
+
+  return (
+    <div className="bg-white p-6 rounded-xl shadow">
+
 {updated && (
   <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
 
@@ -66,10 +66,6 @@ const handleAssign = async () => {
 
   </div>
 )}
-
-  return (
-    <div className="bg-white p-6 rounded-xl shadow">
-
       <h2 className="text-xl font-bold mb-4">
         Assign Ride #{rideId}
       </h2>

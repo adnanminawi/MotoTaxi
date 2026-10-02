@@ -1,20 +1,19 @@
 "use client";
 import { use, useEffect, useState } from "react";
-
-export default function CustomerProfile({ params }) {
-  const { id } = use(params);
-  const [customer, setCustomer] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [message, setMessage] = useState("");
+import { oneCustomer, updateCustomer } from "@/services/admin";
+import { Customer } from "@/types";
+  export default function CustomerProfile({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params);
+    const [customer, setCustomer] = useState<Customer>();
+    const [isEditing, setIsEditing] = useState(false);
+    const [name, setName] = useState("");
+    const [phone, setPhone] = useState("");
+    const [message, setMessage] = useState("");
 
   useEffect(() => {
     async function getCustomer() {
       try {
-        const res = await fetch(`/api/customer/${id}`);
-        const data = await res.json();
-        const profile = data.Customer_Profile[0];
+        const profile = await oneCustomer(Number(id));
         setCustomer(profile);
         setName(profile.name);
         setPhone(profile.phone);
@@ -26,25 +25,21 @@ export default function CustomerProfile({ params }) {
   }, [id]);
 
   async function handleSave() {
-    const res = await fetch(`/api/customer/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, phone }),
-    });
-
-    if (res.ok) {
-      setCustomer({ ...customer, name, phone });
-      setIsEditing(false);
-      setMessage("Customer updated successfully");
-    } else {
+   const data = {name: name, phone: phone};
+   try{
+    const res =await updateCustomer(Number(id),data);
+    setCustomer((prev) => prev ? { ...prev, name, phone } : prev);;
+    setIsEditing(false);
+    setMessage("Customer updated successfully");
+    }catch(err) {
       setMessage("Failed to update customer");
     }
   }
 
   function handleCancel() {
     setIsEditing(false);
-    setName(customer.name);
-    setPhone(customer.phone);
+    setName(customer?.name ?? "");
+    setPhone(customer?.phone ?? "");
   }
 
   if (!customer) return <p className="p-6 text-gray-500">Loading...</p>;

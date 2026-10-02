@@ -29,12 +29,12 @@ export type Driver = {
   current_lng: number;
 };
 
-export type Login ={
+export type DriverLogin ={
     phone : string;
     password : string;
 }
 
-export type LoginResponse ={
+export type DriverLoginResponse ={
     message : string;
     driver : Driver;
 }
@@ -51,4 +51,59 @@ export type StatusResponse ={
 export type RideAction ={
   action: string;
   rideId: number;
+}
+export type Customer= {
+  id: number;
+  phone: string;
+  name : string;
+}
+export type UpdateCustomer ={
+  phone: string;
+  name: string;
+}
+export type CreateDriver ={
+  name: string;
+  phone: string;
+  password: string;
+}
+export type Admin={
+  id: number;
+  username: string;
+}
+export type AdminLogin ={
+  username: string;
+  password: string;
+}
+export type AdminLoginResponse ={
+  message: string;
+  admin: Admin;
+}
+export type RideInfo = {
+  id: number;
+  customer_name: string;
+  driver_name: string | null;  
+  pickup_address: string;
+  destination_address: string;
+  status: "searching" | "assigned" | "en_route" | "completed" | "cancelled" | "no_driver_found";
+};
+  export type AssignDriver = {
+    rideId : number;
+    driverId :number;
+  }
+export type Stats={
+total_drivers: number;
+  total_customers: number;
+  total_rides: number;
+  completed_rides: number;
+  searching_rides: number;
+  cancelled_rides: number;
+  online: number;
+  busy: number;
+  offline: number;
+  recent_customers: {
+    id: number;
+    name: string;
+    phone: string;
+    created_at: string;
+  }[];
 }
