@@ -2,18 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getRides } from "@/services/admin";
+import { RideInfo } from "@/types";
 export default function RidesPage() {
    const router = useRouter();
-  const [rides, setRides] = useState([]);
+  const [rides, setRides] = useState<RideInfo[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchRides = async () => {
       try {
-        const res = await fetch("/api/ride");
-        const data = await res.json();
-
-        setRides(data?.rides_info ?? []);
+        const data =await getRides();
+        setRides(data);
       } catch (err) {
         console.log("Error fetching rides:", err);
         setRides([]);
@@ -26,14 +26,14 @@ export default function RidesPage() {
   }, []);
 
   // 🎯 LABEL (what user sees)
-  const getStatusLabel = (status) => {
+  const getStatusLabel = (status: string) => {
     switch (status) {
       case "completed":
         return "Completed";
 
-      case "pending":
+      case "Searching":
       case "searching":
-        return "Pending";
+        return "Searching";
 
       case "assigned":
       case "accepted":
@@ -48,12 +48,12 @@ export default function RidesPage() {
   };
 
   // 🎨 BADGE COLORS
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
         return "bg-green-100 text-green-700 border-green-200";
 
-      case "pending":
+      case "Searching":
       case "searching":
         return "bg-yellow-100 text-yellow-700 border-yellow-200";
 

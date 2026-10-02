@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { login } from "@/services/admin";
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -11,42 +12,20 @@ export default function AdminLogin() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-
+    const data = {username, password};
     try {
-      const res = await fetch("/api/admin/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username,
-          password,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.message || "Invalid username or password");
-        setLoading(false);
-        return;
-      }
-
-      alert("Login successful!");
-
-      // Redirect to admin 
+      await login(data);
       router.push("/admin");
-    } catch (err) {
-      console.log(err);
-      setError("Something went wrong.");
-    }
-
+    } catch (err: any) {
+    setError(err.response?.data?.message || "Invalid username or password");
+  } finally {
     setLoading(false);
-  };
+  }
+};
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-yellow-100 to-gray-100">

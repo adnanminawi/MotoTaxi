@@ -1,17 +1,18 @@
 "use client";
 import { useEffect, useState } from "react";
+import { getCustomers } from "@/services/admin";
+import type { Customer } from "@/types";
 import Link from "next/link";
 
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
-
+  
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const res = await fetch("/api/customer");
-        const data = await res.json();
-        setCustomers(data.customers);
+        const data= await getCustomers();
+        setCustomers(data);
       } catch (error) {
         console.log(error);
       } finally {

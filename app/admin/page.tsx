@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import { getStats } from "@/services/admin";
+import type { Stats } from "@/types";
 
 const LiveMap = dynamic(() => import("@/components/admin/Map"), {
   ssr: false,
@@ -38,15 +40,14 @@ ChartJS.register(
 );
 
 export default function AdminDashboard() {
-  const [data, setData] = useState(null);
+  const [data, setData] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("/api/admin");
-        const json = await res.json();
-        setData(json);
+        const data = await getStats();
+        setData(data);
       } catch (err) {
         console.error("Error fetching admin data:", err);
       } finally {
@@ -62,36 +63,12 @@ export default function AdminDashboard() {
   }
 
   const stats = [
-    {
-      title: "Total Drivers",
-      value: data?.total_drivers || 0,  
-      icon: <CarTaxiFront />,
-    },
-    {
-      title: "Total Customers",
-      value: data?.total_customers || 0,
-      icon: <Users />,
-    },
-    {
-      title: "Total Rides",
-      value: data?.total_rides || 0,
-      icon: <UserRound />,
-    },
-    {
-      title: "Completed",
-      value: data?.completed_rides || 0,
-      icon: <CheckCircle />,
-    },
-    {
-      title: "Pending",
-      value: data?.pending_rides || 0,
-      icon: <Clock />,
-    },
-    {
-      title: "Cancelled",
-      value: data?.cancelled_rides || 0,
-      icon: <XCircle />,
-    },
+    { title: "Total Drivers", value: data?.total_drivers ?? 0, icon: <CarTaxiFront /> },
+    { title: "Total Customers", value: data?.total_customers ?? 0, icon: <Users /> },
+    { title: "Total Rides", value: data?.total_rides ?? 0, icon: <UserRound /> },
+    { title: "Completed", value: data?.completed_rides ?? 0, icon: <CheckCircle /> },
+    { title: "Searching", value: data?.searching_rides ?? 0, icon: <Clock /> },
+    { title: "Cancelled", value: data?.cancelled_rides ?? 0, icon: <XCircle /> },
   ];
 
   const chartData = {
@@ -100,9 +77,9 @@ export default function AdminDashboard() {
       {
         label: "Rides Status",
         data: [
-          data?.completed_rides || 0,
-          data?.pending_rides || 0,
-          data?.cancelled_rides || 0,
+          data?.completed_rides ?? 0,
+          data?.searching_rides ?? 0,
+          data?.cancelled_rides ?? 0,
         ],
         backgroundColor: ["#22c55e", "#f59e0b", "#ef4444"],
       },
@@ -111,22 +88,16 @@ export default function AdminDashboard() {
 
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
-
       <h1 className="text-2xl font-bold">Admin Dashboard</h1>
 
-      {/* 🟢 TOP SECTION: MAP + STATS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-        {/* 🗺️ LIVE MAP (SMALL) */}
         <div className="bg-white p-3 rounded-xl shadow h-[320px]">
           <h2 className="font-semibold mb-2 text-sm">Live Drivers Map</h2>
-
           <div className="h-[260px] w-full rounded-lg overflow-hidden">
             <LiveMap />
           </div>
         </div>
 
-        {/* 📊 STATS */}
         <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-3 gap-3">
           {stats.map((item, idx) => (
             <div
@@ -143,14 +114,10 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* 📊 CHART */}
       <div className="bg-white p-4 rounded-xl shadow">
         <h2 className="font-semibold mb-4">Rides Overview</h2>
         <Bar data={chartData} />
       </div>
-
-
-      
     </div>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { createDriver } from "@/services/admin";
+
 import { useState } from "react";
 
 export default function CreateDriver() {
@@ -9,37 +11,25 @@ export default function CreateDriver() {
     password: "",
   });
 
-  const handleChange = (e) => {
-    setDriver({
-      ...driver,
-      [e.target.name]: e.target.value,
-    });
-  };
+const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  setDriver({
+    ...driver,
+    [e.target.name]: e.target.value,
+  });
+};
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    try {
-      const res = await fetch("/api/drivers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(driver),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.error || "Failed to create driver");
-        return;
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      const data = {name: driver.name , phone : driver.phone ,password: driver.password}
+      try {
+        await createDriver(data);
+        alert("Driver added successfully.");
+        setDriver({ name: "", phone: "", password: "" });
+      } catch (error) {
+        console.error(error);
+        alert("Failed to create driver.");
       }
-
-      alert("Driver added successfully.");
-      setDriver({ name: "", phone: "", password: "" });
-    } catch (error) {
-      console.error(error);
-      alert("Something went wrong.");
-    }
-  };
+    };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
