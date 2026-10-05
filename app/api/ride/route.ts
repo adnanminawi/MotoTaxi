@@ -12,15 +12,7 @@ async function getAddress(lat: number, lng: number) {
     }
 }
 
-export async function GET() {
-    try{
-        const [ride_info] = await db.query("SELECT r.id,c.name AS customer_name, d.name AS driver_name, r.pickup_address, r.destination_address, r.status FROM ride r LEFT JOIN driver d ON driver_id=d.id JOIN customer c ON customer_id=c.id");
-        return Response.json({ rides_info: ride_info});
-    } catch (error) {
-  console.error(error);
-  return Response.json({ message: "Something went wrong." }, { status: 500 });
-}
-}
+
 
 export async function POST(request:Request){
   const {name, phone,pickup_lat,pickup_lng,destination_lat,destination_lng,status} = await request.json();

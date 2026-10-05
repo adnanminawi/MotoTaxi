@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-
+import { logout } from "@/services/admin";
 import {
   LayoutDashboard,
   Users,
@@ -44,14 +44,10 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const handleLogout = () => {
-    
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
-    // 🚀 redirect to login
-    router.push("/admin/login");
-  };
+  async function handleLogout() {
+  await logout();   // service function calling /api/admin/logout
+  window.location.href = "/admin/login";
+}
 
   return (
     <aside className="w-72 min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-r border-slate-800 flex flex-col">
