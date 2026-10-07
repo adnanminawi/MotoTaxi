@@ -2,24 +2,29 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { getDriverRides } from "@/services/admin";
+import type { DriverRide } from "@/types";
 
 export default function DriverRidesPage() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
 
-  const [rides, setRides] = useState([]);
+  const [rides, setRides] = useState<DriverRide[]>([]);
 
   useEffect(() => {
     const fetchRides = async () => {
-      const res = await fetch(`/api/drivers/${id}`);
-      const data = await res.json();
-      setRides(data.rides || []);
+      try {
+        const data = await getDriverRides(Number(id));
+        setRides(data);
+      } catch (err) {
+        console.error("Error fetching driver rides:", err);
+        setRides([]);
+      }
     };
-
     fetchRides();
   }, [id]);
 
-  const getStatusStyle = (status) => {
+  const getStatusStyle = (status: DriverRide["status"]) => {
     switch (status) {
       case "completed":
         return "bg-green-100 text-green-700";
