@@ -27,7 +27,7 @@ export async function login(data: AdminLogin): Promise<AdminLoginResponse> {
     return res.data;    
 }
 export async function getRides(): Promise<RideInfo[]> {
-    const res = await api.get<{rides_info: RideInfo[]}>("/ride");
+    const res = await api.get<{rides_info: RideInfo[]}>("/admin/ride");
     return res.data.rides_info;
 }
 export async function assignDriver(data:AssignDriver): Promise<{message: string}> {
@@ -37,4 +37,8 @@ export async function assignDriver(data:AssignDriver): Promise<{message: string}
 export async function getStats(): Promise<Stats> {
     const res = await api.get<Stats>("/admin");
     return res.data;
+}
+export async function logout() {
+  const res = await api.post("/admin/logout");
+  return res.data;
 }
