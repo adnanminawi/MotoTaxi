@@ -1,6 +1,6 @@
 "use client";
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import {useEffect, useState } from "react";
 import { driverSession, setStatus, rideService,logout } from "@/services/driver";
 const Map = dynamic(() => import("@/components/DriverMap"), { ssr: false });
 import GPSStream from "@/components/GPSStream";
@@ -12,8 +12,6 @@ export default function DriverClient() {
   const [isOnline, setIsOnline] = useState(false);
   const [activeRide, setActiveRide] = useState(null);
   const [totalRides, setTotalRides] = useState(0);
-  const [pickup, setPickup] = useState(null);
-  const [destination, setDestination] = useState(null);
 
   useEffect(() => {
     async function fetchDriver() {
@@ -46,14 +44,10 @@ export default function DriverClient() {
   async function acceptRide() {
     const d ={
     action : "accept",
-  rideId : rideRequest.id}
+    rideId : rideRequest.id}
     try {
       await rideService(d);
-      setActiveRide(rideRequest);
-      setPickup({
-          lat: rideRequest.pickup.lat,
-          lng: rideRequest.pickup.lng,
-      });
+      setActiveRide({ ...rideRequest, status: "assigned" });
       setRideRequest(null); 
     } catch (err) {
       console.error("Failed to accept ride:", err);
@@ -81,6 +75,15 @@ export default function DriverClient() {
       console.error(err);
     }
   }
+  async function arrivedAtPickup(){
+    const d = {action:"arrived", rideId: activeRide.id}
+    try{
+      await rideService(d);
+      setActiveRide((prev) => ({ ...prev, status: "en_route" }));
+    }catch(err){
+      console.error("Failed to mark arrived:", err);
+    }
+  }
 
 
   async function handleLogout() {
@@ -99,6 +102,9 @@ export default function DriverClient() {
     return () => clearTimeout(timer);
   }, [rideRequest]);
 
+
+  const target = activeRide ? activeRide.status === "en_route" ? activeRide.destination : activeRide.pickup : null;
+
   return (
     <div className="flex-1 flex h-[calc(100vh-60px)]">
       <div className="w-80 bg-white p-5 flex flex-col gap-4 border-r border-gray-300">
@@ -116,10 +122,8 @@ export default function DriverClient() {
 
         <div className="bg-[#f7f7f7] p-4 rounded-[10px] border border-[#e3e3e3]">
           <h3 className="text-[13px] font-semibold text-gray-500 mb-1.5">Status</h3>
-          <button
-            className="w-full py-2.5 bg-[#f4c542] hover:bg-[#e6b93c] font-semibold text-sm cursor-pointer rounded-md text-black transition"
-            onClick={toggleStatus}
-          >
+          <button className="w-full py-2.5 bg-[#f4c542] hover:bg-[#e6b93c] font-semibold text-sm cursor-pointer rounded-md text-black transition"
+            onClick={toggleStatus}>
             {isOnline ? "Go Offline" : "Go Online"}
           </button>
           
@@ -152,9 +156,8 @@ export default function DriverClient() {
             <div className="flex justify-between mt-2.5 gap-2.5">
               <button
                 className="flex-1 bg-[#f4c542] p-2 rounded-md font-semibold cursor-pointer"
-                onClick={acceptRide}
-              >
-                Accept
+                onClick={acceptRide}> 
+                Accept 
               </button>
               <button
                 className="flex-1 bg-[#e0e0e0] p-2 rounded-md font-semibold cursor-pointer"
@@ -173,23 +176,26 @@ export default function DriverClient() {
             <p className="text-[13px] text-gray-600 my-1">Destination: {activeRide.destination.address}</p>
 
             <div className="mt-4 flex justify-center">
-              <button
+              {activeRide.status==="assigned"?(
+                <button
                 className="flex-1 bg-[#f4c542] p-2 rounded-md font-semibold cursor-pointer"
-                onClick={completeRide}
-              >
+                onClick={arrivedAtPickup}>
+                Arrived
+                </button>
+                ) : (
+                <button
+                className="flex-1 bg-[#f4c542] p-2 rounded-md font-semibold cursor-pointer"
+                onClick={completeRide}>
                 Complete Ride
-              </button>
+                </button>
+                )}
             </div>
-          </div>
+         </div>
         )}
 
         <Map
-          rideRequest={activeRide || rideRequest}
           driverLocation={{ lat: driver?.current_lat, lng: driver?.current_lng }}
-          pickup={pickup}
-          setPickup={setPickup}
-          destination={destination}
-          setDestination={setDestination}
+          target={target}
         />
       </div>
     </div>
