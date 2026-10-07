@@ -48,12 +48,11 @@ export async function POST(req: Request) {
     );
   
     const cookieStore = await cookies();
-    cookieStore.set("token", token, {
+    cookieStore.set("driver_token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",   // ← the localhost trap
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 7,
-    path: "/",
     });
 
     // Success

@@ -45,7 +45,7 @@
     { expiresIn: "7d" }
   );
 const cookieStore = await cookies();
-cookieStore.set("token", token, {          
+cookieStore.set("admin_token", token, {          
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax",
