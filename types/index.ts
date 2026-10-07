@@ -86,6 +86,13 @@ export type RideInfo = {
   destination_address: string;
   status: "searching" | "assigned" | "en_route" | "completed" | "cancelled" | "no_driver_found";
 };
+export type DriverRide = {
+  id: number;
+  customer_name: string;
+  pickup_address: string;
+  destination_address: string;
+  status: RideInfo["status"];
+};
   export type AssignDriver = {
     rideId : number;
     driverId :number;
@@ -107,3 +114,36 @@ total_drivers: number;
     created_at: string;
   }[];
 }
+
+export type RidePoint = {
+  lat: string | number;   
+  lng: string | number;
+  address: string;
+};
+
+export type RideRequest = {
+  id: number;
+  customer: { name: string; phone: string };
+  pickup: RidePoint;
+  destination: RidePoint;
+  status?: "assigned" | "en_route";   
+};
+export type PendingRideRow = {
+  id: number;
+  status: "searching";
+  customer_name: string;
+  customer_phone: string;
+  pickup_lat: string;
+  pickup_lng: string;
+  pickup_address: string;
+  destination_lat: string;
+  destination_lng: string;
+  destination_address: string;
+};
+export type OnlineDriver = {
+  id: number;
+  name: string;
+  status: "online" | "busy";
+  current_lat: string;
+  current_lng: string;
+};

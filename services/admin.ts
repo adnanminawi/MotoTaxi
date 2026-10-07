@@ -1,5 +1,5 @@
 import api from "./axios";
-import {  type Customer, type UpdateCustomer, AdminLogin, AdminLoginResponse, AssignDriver, CreateDriver, Driver, RideInfo, Stats } from "@/types";
+import {  type Customer, type UpdateCustomer, AdminLogin, AdminLoginResponse, AssignDriver, CreateDriver, Driver, RideInfo, Stats, DriverRide,OnlineDriver} from "@/types";
 
 
 export async function getCustomers(): Promise<Customer[]> {
@@ -34,9 +34,17 @@ export async function assignDriver(data:AssignDriver): Promise<{message: string}
     const res = await api.post<{message:string}>("/admin/assign",data);
     return res.data;
 }
+export async function getDriverRides(id: number): Promise<DriverRide[]> {
+  const res = await api.get<{ rides: DriverRide[] }>(`/drivers/${id}`);
+  return res.data.rides;
+}
 export async function getStats(): Promise<Stats> {
     const res = await api.get<Stats>("/admin");
     return res.data;
+}
+export async function getOnlineDrivers(): Promise<OnlineDriver[]> {
+  const res = await api.get<{ drivers: OnlineDriver[] }>("/admin/online");
+  return res.data.drivers;
 }
 export async function logout() {
   const res = await api.post("/admin/logout");

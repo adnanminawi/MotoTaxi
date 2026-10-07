@@ -2,15 +2,18 @@
 import dynamic from "next/dynamic";
 import {useEffect, useState } from "react";
 import { driverSession, setStatus, rideService,logout } from "@/services/driver";
-const Map = dynamic(() => import("@/components/DriverMap"), { ssr: false });
+import type { Driver, RideRequest } from "@/types";
 import GPSStream from "@/components/GPSStream";
 import RidePopup from "@/components/RidePopup";
 
+const Map = dynamic(() => import("@/components/DriverMap"), { ssr: false });
+
+
 export default function DriverClient() {
-  const [rideRequest, setRideRequest] = useState(null);
-  const [driver, setDriver] = useState(null);
+  const [rideRequest, setRideRequest] = useState<RideRequest | null>(null);
+  const [driver, setDriver] = useState<Driver | null>(null);
   const [isOnline, setIsOnline] = useState(false);
-  const [activeRide, setActiveRide] = useState(null);
+  const [activeRide, setActiveRide] = useState<RideRequest | null>(null);
   const [totalRides, setTotalRides] = useState(0);
 
   useEffect(() => {
@@ -35,13 +38,14 @@ export default function DriverClient() {
     try {
       await setStatus(newStatus);
       setIsOnline(newStatus === "online");
-      setDriver((prev) => ({ ...prev, status: newStatus }));
+      setDriver((prev) => (prev ? { ...prev, status: newStatus } : prev));
     } catch (err) {
       console.error("Error updating status:", err);
     }
   }
 
-  async function acceptRide() {
+  async function acceptRide() { 
+    if(!rideRequest) return;
     const d ={
     action : "accept",
     rideId : rideRequest.id}
@@ -55,6 +59,7 @@ export default function DriverClient() {
   }
 
   async function rejectRide() {
+    if(!rideRequest) return;
     const d = {action : "reject" ,rideId : rideRequest.id}
     try{
       await rideService(d);
@@ -65,21 +70,23 @@ export default function DriverClient() {
   }
 
   async function completeRide() {
+    if(!activeRide) return;
     const d ={ action: "complete",rideId : activeRide.id}
     try {
       await rideService(d);
         setActiveRide(null);
         setIsOnline(true);
-        setDriver((prev) => ({ ...prev, status: "online" }));
+        setDriver((prev) => (prev ? { ...prev, status: "online" } : prev));
     } catch (err) {
       console.error(err);
     }
   }
   async function arrivedAtPickup(){
+    if(!activeRide) return;
     const d = {action:"arrived", rideId: activeRide.id}
     try{
       await rideService(d);
-      setActiveRide((prev) => ({ ...prev, status: "en_route" }));
+      setActiveRide((prev) => (prev ? { ...prev, status: "en_route" } : prev));
     }catch(err){
       console.error("Failed to mark arrived:", err);
     }
