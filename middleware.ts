@@ -17,34 +17,31 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const isAdminRoute =
-  pathname.startsWith("/admin") ||
-  pathname.startsWith("/api/admin") ||
-  pathname.startsWith("/api/customer");
-  const token = request.cookies.get("token")?.value;
   const isApi = pathname.startsWith("/api");
+  const isAdminRoute =
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/api/admin") ||
+    pathname.startsWith("/api/customer");
+
+  // each area has its own cookie and required role
+  const cookieName = isAdminRoute ? "admin_token" : "driver_token";
+  const requiredRole = isAdminRoute ? "admin" : "driver";
   const loginUrl = isAdminRoute ? "/admin/login" : "/driver/login";
 
-  if (!token) {
-    return isApi
+  const reject = () =>
+    isApi
       ? NextResponse.json({ error: "Unauthorized" }, { status: 401 })
       : NextResponse.redirect(new URL(loginUrl, request.url));
-  }
+
+  const token = request.cookies.get(cookieName)?.value;
+  if (!token) return reject();
 
   try {
     const { payload } = await jwtVerify(token, secret);
-
-    if (isAdminRoute && payload.role !== "admin") {
-      return isApi
-        ? NextResponse.json({ error: "Forbidden" }, { status: 403 })
-        : NextResponse.redirect(new URL("/", request.url));
-    }
-
+    if (payload.role !== requiredRole) return reject();
     return NextResponse.next();
   } catch {
-    return isApi
-      ? NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-      : NextResponse.redirect(new URL(loginUrl, request.url));
+    return reject();
   }
 }
 
