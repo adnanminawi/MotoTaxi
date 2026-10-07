@@ -102,7 +102,7 @@ export default function DriverClient() {
     return () => clearTimeout(timer);
   }, [rideRequest]);
 
-
+ // target answers one question Where should the driver be heading right now
   const target = activeRide ? activeRide.status === "en_route" ? activeRide.destination : activeRide.pickup : null;
 
   return (
