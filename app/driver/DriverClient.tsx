@@ -118,7 +118,7 @@ export default function DriverClient() {
         <GPSStream driverId={driver?.id} isActive={isOnline} />
 
         {isOnline && !activeRide && (
-          <RidePopup setRideRequest={setRideRequest} driverId={driver?.id} />
+          <RidePopup setRideRequest={setRideRequest} />
         )}
 
         <div className="bg-[#f7f7f7] p-4 rounded-[10px] border border-[#e3e3e3]">
