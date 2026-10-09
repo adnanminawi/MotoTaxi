@@ -148,7 +148,7 @@ describe('rejectRide', () => {
     expect(driver.status).toBe('online')
   })
 
-  it('driver A reject ride, it should be assigned to driver B',async()=>{
+  it('re-offers the ride to the next available driver',async()=>{
     const driverA = await createDriver({status:'online'})
     const driverB = await createDriver({status:'online'})
     const rideId = await createRide({ status: 'searching', driverId: driverA })
@@ -163,5 +163,28 @@ describe('rejectRide', () => {
 
     const driver = await getDriver(driverB)
     expect(driver.status).toBe('online')
+  })
+  it('skips every driver who already rejected the ride', async()=>{
+    const beirut = { lat: 33.8938, lng: 35.5018 }
+    const aley = { lat: 33.8053, lng: 35.6000 }
+    const tyre = { lat: 33.271992, lng: 35.203487 }
+
+    
+    const driverA = await createDriver({lat: beirut.lat, lng: beirut.lng})
+    const driverB = await createDriver({lat: aley.lat, lng: aley.lng})
+    const driverC = await createDriver({lat: tyre.lat, lng: tyre.lng})
+    const rideId = await createRide({status:'searching', driverId: driverA})
+
+    const result = await rejectRide(rideId,driverA)
+    expect(result).toEqual({ok: true, assignedDriver: driverB})
+
+    const result2 = await rejectRide(rideId,driverB)
+    expect(result2).toEqual({ok: true, assignedDriver: driverC})
+
+
+    const ride = await getRide(rideId)
+    expect(ride.status).toBe('searching')
+    expect(ride.driver_id).toBe(driverC)
+
   })
 })
