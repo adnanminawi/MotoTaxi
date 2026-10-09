@@ -3,6 +3,7 @@ import db from '@/lib/db'
 import { acceptRide, completeRide, markArrived, rejectRide } from '@/lib/rides'
 import { resetDb, createDriver, createRide, getRide, getDriver } from '@/tests/helpers/db'
 
+
 beforeEach(async () => {
   await resetDb()
 })
@@ -147,4 +148,20 @@ describe('rejectRide', () => {
     expect(driver.status).toBe('online')
   })
 
+  it('driver A reject ride, it should be assigned to driver B',async()=>{
+    const driverA = await createDriver({status:'online'})
+    const driverB = await createDriver({status:'online'})
+    const rideId = await createRide({ status: 'searching', driverId: driverA })
+
+    const result = await rejectRide(rideId,driverA)
+
+    expect(result).toEqual({ok: true, assignedDriver: driverB})
+
+    const ride = await getRide(rideId)
+    expect(ride.status).toBe('searching')
+    expect(ride.driver_id).toBe(driverB)
+
+    const driver = await getDriver(driverB)
+    expect(driver.status).toBe('online')
+  })
 })
