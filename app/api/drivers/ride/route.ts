@@ -62,12 +62,17 @@ export async function PUT(req: Request) {
 
     if (action === "reject") {
       const result = await rejectRide(rideId, driverId);
+      if (!result.ok) {
+        if (result.reason === "not_found") {
+          return Response.json({ message: "Ride not found" }, { status: 404 });
+        }
+        return Response.json({ message: "Ride not offered to you" }, { status: 409 });
+      }
       return Response.json({
         message: result.assignedDriver ? "Reassigned to next driver" : "No drivers left",
         assignedDriver: result.assignedDriver,
       });
     }
-    // BUG (kept): an unknown action falls through with no response
   } catch (error) {
     console.error(error);
     return Response.json({ error: "Failed to update ride" }, { status: 500 });
