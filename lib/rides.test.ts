@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, afterAll } from 'vitest'
 import db from '@/lib/db'
 import { acceptRide, completeRide, markArrived, rejectRide } from '@/lib/rides'
 import { resetDb, createDriver, createRide, getRide, getDriver } from '@/tests/helpers/db'
+import { ArrowUpWideNarrow } from 'lucide-react'
+import { get } from 'http'
 
 
 beforeEach(async () => {
@@ -186,5 +188,18 @@ describe('rejectRide', () => {
     expect(ride.status).toBe('searching')
     expect(ride.driver_id).toBe(driverC)
 
+  })
+  it('the wrong driver rejects a ride',async()=>{
+    const driverA = await createDriver()
+    const driverB = await createDriver()
+    const rideId= await createRide({status:'searching',driverId: driverA})
+    
+    const result = await rejectRide(rideId,driverB)
+    expect(result).toEqual({ok: false, reason:'conflict'})
+
+    const ride = await getRide(rideId)
+    expect(ride.status).toBe('searching')
+    expect(ride.driver_id).toBe(driverA)
+    expect(ride.rejected_by).toBeNull()
   })
 })

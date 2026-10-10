@@ -6,7 +6,9 @@ export type RideResult =
     | { ok: true }
     | { ok: false; reason: "conflict" | "not_found" };
 
-export type RejectResult = { ok: true; assignedDriver: number | null };
+export type RejectResult =
+    | { ok: true; assignedDriver: number | null }
+    | { ok: false; reason: "conflict" | "not_found" };
 
 export async function acceptRide(rideId: number, driverId: number): Promise<RideResult> {
 
@@ -43,12 +45,16 @@ export async function completeRide(rideId: number, driverId: number): Promise<Ri
 }
 
 export async function rejectRide(rideId: number, driverId: number): Promise<RejectResult> {
-    // BUG (kept): no ownership or state check
     const [rows] = await db.query<RowDataPacket[]>(
-        "SELECT pickup_lat, pickup_lng, rejected_by FROM ride WHERE id = ?",
+        "SELECT driver_id, status, pickup_lat, pickup_lng, rejected_by FROM ride WHERE id = ?",
         [rideId]
     );
-    const ride = rows[0]; // BUG (kept): undefined if the ride doesn't exist, so the next line crashes
+    const ride = rows[0];
+
+    if (!ride) return { ok: false, reason: "not_found" };
+    if (Number(ride.driver_id) !== driverId || ride.status !== "searching") {
+        return { ok: false, reason: "conflict" };
+    }
 
     const rejected: number[] = ride.rejected_by ? ride.rejected_by.split(",").map(Number) : [];
     rejected.push(driverId);
