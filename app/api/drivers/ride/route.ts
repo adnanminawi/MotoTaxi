@@ -1,7 +1,7 @@
 import db from "@/lib/db";
-import { RowDataPacket,ResultSetHeader  } from "mysql2";
-import { findNearestDriver } from "@/lib/findNearestDriver";
+import { RowDataPacket } from "mysql2";
 import { getDriverId } from "@/lib/getDriverId";
+import { acceptRide, markArrived, completeRide, rejectRide } from "@/lib/rides";
 
 
 
@@ -32,91 +32,49 @@ export async function GET() {
   }
 }
 
+
+// GET unchanged
+
 export async function PUT(req: Request) {
   try {
-    
     const driverId = await getDriverId();
     if (!driverId) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     const { action, rideId } = await req.json();
-  
-  
+
     if (action === "accept") {
-      const [result] = await db.query<ResultSetHeader>(
-      "UPDATE ride SET driver_id = ?, status = 'assigned', assigned_at = NOW() WHERE id = ? AND status = 'searching'",
-      [driverId, rideId]
-      );
-
-    if (result.affectedRows === 0) {
-    return Response.json({ message: "Ride already taken" }, { status: 409 });
+      const result = await acceptRide(rideId, driverId);
+      if (!result.ok) return Response.json({ message: "Ride already taken" }, { status: 409 });
+      return Response.json({ message: "Ride accepted successfully" });
     }
 
-    await db.query("UPDATE driver SET status = 'busy' WHERE id = ?", [driverId]);
-    return Response.json({ message: "Ride accepted successfully" })
+    if (action === "arrived") {
+      const result = await markArrived(rideId, driverId);
+      if (!result.ok) return Response.json({ message: "Ride not in a state to mark arrived" }, { status: 409 });
+      return Response.json({ message: "Arrived at pickup" });
     }
 
-
-    if(action ==="arrived"){
-      const [result] = await db.query<ResultSetHeader>(
-        "UPDATE ride SET status = 'en_route' WHERE id=? AND driver_id= ? AND status='assigned'",
-        [rideId,driverId]
-      );  
-      if (result.affectedRows === 0) {
-      return Response.json({ message: "Ride not in a state to mark arrived" }, { status: 409 });
-      }
-    return Response.json({ message: "Arrived at pickup" });
+    if (action === "complete") {
+      const result = await completeRide(rideId, driverId);
+      if (!result.ok) return Response.json({ message: "Ride not in a state to complete" }, { status: 409 });
+      return Response.json({ message: "Ride completed successfully" });
     }
 
-    if(action == "reject"){
-      const [rows] = await db.query<RowDataPacket[]>("SELECT pickup_lat, pickup_lng, rejected_by FROM ride WHERE id=?",
-        [rideId]);
-        const ride = rows[0];
-
-
-    const rejected = ride.rejected_by ? ride.rejected_by.split(",").map(Number) : [];
-    rejected.push(Number(driverId));
-
-    await db.query("UPDATE ride SET rejected_by = ? WHERE id = ?", [rejected.join(","), rideId]);
-    
-    const nextDriver = await findNearestDriver(ride.pickup_lat, ride.pickup_lng, rejected);
-
-      if (nextDriver) {
-        await db.query("UPDATE ride SET driver_id = ? WHERE id = ?", [nextDriver.id, rideId]);
-      } else {
-        await db.query("UPDATE ride SET driver_id = NULL, status = 'no_driver_found' WHERE id = ?", [rideId]);
+    if (action === "reject") {
+      const result = await rejectRide(rideId, driverId);
+      if (!result.ok) {
+        if (result.reason === "not_found") {
+          return Response.json({ message: "Ride not found" }, { status: 404 });
+        }
+        return Response.json({ message: "Ride not offered to you" }, { status: 409 });
       }
       return Response.json({
-        message: nextDriver ? "Reassigned to next driver" : "No drivers left",
-        assignedDriver: nextDriver?.id ?? null,
+        message: result.assignedDriver ? "Reassigned to next driver" : "No drivers left",
+        assignedDriver: result.assignedDriver,
       });
     }
-
-    
-
-  if (action === "complete") {
-  
-  const [result]: any = await db.query<ResultSetHeader>("UPDATE ride SET status = 'completed', completed_at = NOW() WHERE id = ? AND driver_id = ? AND status = 'en_route'",
-  [rideId,driverId]);
-
-  const [driverResult]= await db.query("UPDATE driver SET status='online' WHERE id=?",
-    [driverId]);
-
-    if (result.affectedRows === 0) {
-    return Response.json({ message: "Ride not in a state to complete" }, { status: 409 });
-    }
-
-    await db.query("UPDATE driver SET status = 'online' WHERE id = ?", [driverId]);
-    return Response.json({ message: "Ride completed successfully" });
-  }
-
-    
   } catch (error) {
     console.error(error);
-
-    return Response.json(
-      { error: "Failed to update ride" },
-      { status: 500 }
-    );
+    return Response.json({ error: "Failed to update ride" }, { status: 500 });
   }
 }
-
